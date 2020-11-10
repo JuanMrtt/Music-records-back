@@ -32,7 +32,8 @@ recordsRouter.post('/', (req, res) => {
 recordsRouter.get('/', (req, res) => {
     Records.find({}, { __v: 0, createdAt: 0, updatedAt: 0 })
         .then((records) => {
-            res.send(records)
+            res.set("Content-type", "application/json; charset=utf-8")
+                .send(JSON.stringify({ records }, null, 2));
         }).catch((error) => {
             res.status(500).send(error)
         })
@@ -79,23 +80,23 @@ recordsRouter.put('/:id', (req, res) => {
     const image = req.body.image;
     const date = req.body.date;
 
-    Records.findByIdAndUpdate(id , {
-        record : record,
-        artist : artist,
+    Records.findByIdAndUpdate(id, {
+        record: record,
+        artist: artist,
         year: year,
-        style : style,
-        added : added,
-        image : image,
+        style: style,
+        added: added,
+        image: image,
         date: date
     })
 
-    .then(()=>{
-        return Records.findById(id)
-    }).then((recordUpdated)=>{
-        res.send(recordUpdated)
-    }).catch((error)=>{
-        res.status(500).send(error)
-    })
+        .then(() => {
+            return Records.findById(id)
+        }).then((recordUpdated) => {
+            res.send(recordUpdated)
+        }).catch((error) => {
+            res.status(500).send(error)
+        })
 
 })
 

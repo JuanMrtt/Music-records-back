@@ -8,36 +8,36 @@ const registerFormRouter = express.Router();
 const fs = require('fs-extra');
 const cloudinary = require('cloudinary').v2;
 
-let multer= require('multer');
+let multer = require('multer');
 
-const VALID_FILE_TYPE = ['image/jpg', 'image/png' , 'image/jpeg'];
+const VALID_FILE_TYPE = ['image/jpg', 'image/png', 'image/jpeg'];
 const IMAGES_URL_BASE = "/ProfileImages";
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
-}) 
+})
 
-const fileFilter = (req, file , cb)=>{
+const fileFilter = (req, file, cb) => {
     console.log(file);
-    if(!VALID_FILE_TYPE.includes(file.mimetype)){
-     cb(new Error('Invalid type of file'))
-    }else{
-        cb(null , true)
+    if (!VALID_FILE_TYPE.includes(file.mimetype)) {
+        cb(new Error('Invalid type of file'))
+    } else {
+        cb(null, true)
     }
 }
 
 let storage = multer.diskStorage({
-    destination:function(req, file , cb){
-        cb(null , './public' + IMAGES_URL_BASE)
+    destination: function (req, file, cb) {
+        cb(null, './public' + IMAGES_URL_BASE)
     },
-    filename: function(req , file , cb){
-        cb(null , file.originalname)
+    filename: function (req, file, cb) {
+        cb(null, file.originalname)
     }
 })
 
-let upload = multer({ storage: storage , fileFilter: fileFilter });
+let upload = multer({ storage: storage, fileFilter: fileFilter });
 
 /////////////////////////////////login route///////////////////////////////////////////////////////////////
 registerFormRouter.post('/login', (req, res) => {
@@ -108,43 +108,44 @@ registerFormRouter.post('/register', (req, res) => {
     })
 })
 
-registerFormRouter.get('/' , (req, res)=>{
-    RegisterForm.find({}, {__v:0 , createdAt:0 , updatedAt:0})
-    .then((datoUsuario)=>{
-        res.send(datoUsuario)
-    }).catch((err)=>{
-        res.status(500).send(err)
-    })
-})
-
-registerFormRouter.get('/:id', (req , res)=>{
-    const id = req.params.id;
-    RegisterForm.find({ _id : id }, { __v :0 , createdAt: 0 , updatedAt: 0 })
-    .then((datoUsuario)=>{
-        res.send(datoUsuario)
-    }).catch((err)=>{
-        res.status(500).send(err)
-    })
-})
-
-registerFormRouter.post('/profileImage/:id' ,authenticateJWT , upload.single('avatar'),(req, res)=>{
-    const id = req.params.id;
-
-    const result1 = cloudinary.uploader.upload(req.file.path, (error , result)=>{
-        console.log(error , result, id , `the url of image is ${result.url}`);
-        RegisterForm.findByIdAndUpdate({ _id : id } , {imagen : result.url})
-        .then((uploadedUser , err)=>{
-            if(err){
-                res.status(500).send(err)
-            } else{
-                res.send("image updated")
-            }
-        }).catch((err)=>{
-            console.log('llegaste pero no actulizaste')
+registerFormRouter.get('/', (req, res) => {
+    RegisterForm.find({}, { __v: 0, createdAt: 0, updatedAt: 0 })
+        .then((datoUsuario) => {
+            res.set("Content-type", "application/json; charset=utf-8")
+                .send(JSON.stringify({ datoUsuario }, null, 2));
+        }).catch((err) => {
+            res.status(500).send(err)
         })
+})
+
+registerFormRouter.get('/:id', (req, res) => {
+    const id = req.params.id;
+    RegisterForm.find({ _id: id }, { __v: 0, createdAt: 0, updatedAt: 0 })
+        .then((datoUsuario) => {
+            res.send(datoUsuario)
+        }).catch((err) => {
+            res.status(500).send(err)
+        })
+})
+
+registerFormRouter.post('/profileImage/:id', /* authenticateJWT ,*/upload.single('avatar'), (req, res) => {
+    const id = req.params.id;
+
+    const result1 = cloudinary.uploader.upload(req.file.path, (error, result) => {
+        console.log(result, id, `the url of image is ${result.url}`);
+        RegisterForm.findByIdAndUpdate({ _id: id }, { imagen: result.url })
+            .then((uploadedUser, err) => {
+                if (err) {
+                    res.status(500).send(err)
+                } else {
+                    res.send("image updated")
+                }
+            }).catch((err) => {
+                console.log('llegaste pero no actulizaste')
+            })
         fs.unlink(req.file.path)
 
     })
-} )
+})
 
 module.exports = registerFormRouter;
