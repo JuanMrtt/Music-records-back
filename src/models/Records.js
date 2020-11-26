@@ -4,12 +4,12 @@ const Schema = mongoose.Schema;
 
 const recordsSchema = new Schema (
     {
-        record  : { type: String , required: true },
-        artist : { type : String , required: true },
-        year : { type : Number , required : true },
-        style : { type : String , required : true },
-        added : { type : Boolean , required : true },
-        image : { type : String , required : true },
+        record  : { type: String , required:false },
+        artist : { type : String , required:true },
+        year : { type : Number , required :true },
+        style : { type : String , required :true },
+        added : { type : Boolean , required :false },
+        image : { type : String , required :false },
         date : { type : Date , default : Date.now() }
     },
     {

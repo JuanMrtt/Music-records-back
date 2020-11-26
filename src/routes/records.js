@@ -1,6 +1,39 @@
 const express = require('express');
 const Records = require('../models/Records');
 const recordsRouter = express.Router();
+const fs = require('fs-extra');
+const cloudinary = require('cloudinary').v2;
+let multer = require('multer');
+
+const VALID_FILE_TYPE = ['image/jpg', 'image/png', 'image/jpeg'];
+const IMAGES_URL_BASE = "/ProfileImages";
+
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+})
+
+const fileFilter = (req, file, cb) => {
+    console.log(file);
+    if (!VALID_FILE_TYPE.includes(file.mimetype)) {
+        cb(new Error('Invalid type of file'))
+    } else {
+        cb(null, true)
+    }
+}
+
+let storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, './public' + IMAGES_URL_BASE)
+    },
+    filename: function (req, file, cb) {
+        cb(null, file.originalname)
+    }
+})
+
+let upload = multer({ storage: storage, fileFilter: fileFilter });
+
 
 recordsRouter.post('/', (req, res) => {
     const record = req.body.record;
@@ -29,15 +62,47 @@ recordsRouter.post('/', (req, res) => {
         })
 })
 
+recordsRouter.post('/userPost', upload.single('image'), (req, res) => {
+    
+    cloudinary.uploader.upload(req.file.path, (error, result) => {
+        // console.log(result.url);
+        const image = result.url;
+        const year = req.body.year;
+        const style = req.body.style;
+        const artist = req.body.artist;
+
+        const records = new Records();
+
+
+        records.image = image;
+        records.year = year;
+        records.artist = artist;
+        records.style = style;
+
+        records.save()
+            .then((newRecords) => {
+                res.json(newRecords)
+            })
+            .catch((error) => {
+                res.status(500).send(error)
+            })
+    })
+
+
+})
+
 recordsRouter.get('/', (req, res) => {
-    Records.find({}, { __v: 0, createdAt: 0, updatedAt: 0 })
+    Records.find({}, { __v: 0, createdAt: 0, updatedAt: 0 }).sort({"_id": -1})
         .then((records) => {
-            res.set("Content-type", "application/json; charset=utf-8")
-                .send(JSON.stringify({ records }, null, 2));
+            res.json(records)
+            // res.set("Content-type", "application/json; charset=utf-8")
+            //     .send(JSON.stringify({ records }, null, 2));
         }).catch((error) => {
             res.status(500).send(error)
         })
 })
+
+
 
 recordsRouter.get('/:id', (req, res) => {
     const id = req.params.id;
@@ -57,7 +122,7 @@ recordsRouter.delete('/', (req, res) => {
 })
 
 
-recordsRouter.delete('/:id', (req, res) => {
+recordsRouter.delete('/delete/:id', (req, res) => {
     const id = req.params.id;
 
     Records.findByIdAndDelete(id)
